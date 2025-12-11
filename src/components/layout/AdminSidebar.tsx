@@ -6,7 +6,6 @@ import {
   Package,
   FileText,
   Settings,
-  Menu as MenuIcon,
   Image,
   MessageSquare,
   CreditCard,
@@ -14,9 +13,9 @@ import {
   ChevronLeft,
   ChevronDown,
   ChevronRight,
-  FolderTree,
-  Globe,
-  Newspaper,
+  Calculator,
+  Wallet,
+  Zap,
 } from "lucide-react";
 
 interface NavItem {
@@ -27,7 +26,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { title: "Dashboard", href: "/", icon: LayoutDashboard },
+  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Products", href: "/products", icon: Package },
   {
     title: "Content & SEO",
@@ -47,13 +46,21 @@ const navItems: NavItem[] = [
     ],
   },
   { title: "Reviews", href: "/reviews", icon: MessageSquare },
-  { title: "Payments", href: "/payments", icon: CreditCard },
+  {
+    title: "Finance",
+    icon: CreditCard,
+    children: [
+      { title: "Payments", href: "/payments" },
+      { title: "EMI Management", href: "/emi" },
+      { title: "Payment Gateways", href: "/payment-gateways" },
+    ],
+  },
   { title: "Notifications", href: "/notifications", icon: Bell },
 ];
 
 export function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>(["Content & SEO", "UI Control"]);
+  const [expandedItems, setExpandedItems] = useState<string[]>(["Content & SEO", "UI Control", "Finance"]);
   const location = useLocation();
 
   const toggleExpanded = (title: string) => {
@@ -77,10 +84,13 @@ export function AdminSidebar() {
       <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
-              <Package className="h-4 w-4 text-sidebar-primary-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-brand">
+              <Zap className="h-5 w-5 text-sidebar-background" />
             </div>
-            <span className="text-lg font-semibold text-sidebar-foreground">Commerce</span>
+            <div>
+              <span className="text-lg font-bold text-primary">Fatafat</span>
+              <span className="text-lg font-bold text-secondary">Sewa</span>
+            </div>
           </div>
         )}
         <button
@@ -164,12 +174,12 @@ export function AdminSidebar() {
       {!collapsed && (
         <div className="border-t border-sidebar-border p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-foreground text-sm font-medium">
-              AD
+            <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-brand text-sidebar-background text-sm font-bold">
+              FS
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">Admin User</p>
-              <p className="text-xs text-sidebar-muted truncate">admin@commerce.com</p>
+              <p className="text-xs text-sidebar-muted truncate">admin@fatafatsewa.com</p>
             </div>
           </div>
         </div>

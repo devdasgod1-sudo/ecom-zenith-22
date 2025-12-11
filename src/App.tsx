@@ -8,6 +8,8 @@ import Products from "./pages/Products";
 import ProductEdit from "./pages/ProductEdit";
 import Reviews from "./pages/Reviews";
 import Payments from "./pages/Payments";
+import EMI from "./pages/EMI";
+import PaymentGateways from "./pages/PaymentGateways";
 import Notifications from "./pages/Notifications";
 import Blog from "./pages/Blog";
 import Categories from "./pages/Categories";
@@ -32,6 +34,8 @@ const App = () => (
           <Route path="/categories" element={<Categories />} />
           <Route path="/reviews" element={<Reviews />} />
           <Route path="/payments" element={<Payments />} />
+          <Route path="/emi" element={<EMI />} />
+          <Route path="/payment-gateways" element={<PaymentGateways />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/banners" element={<Banners />} />
           <Route path="/seo" element={<PlaceholderPage />} />
