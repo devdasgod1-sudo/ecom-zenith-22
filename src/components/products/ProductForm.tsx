@@ -29,6 +29,12 @@ import {
   Settings,
   Trash2,
   X,
+  Tag,
+  Barcode,
+  Archive,
+  Sparkles,
+  Star,
+  CheckCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -70,10 +76,11 @@ const categories = [
   { id: "fashion", name: "Fashion", attributes: ["Size", "Color", "Material"] },
   { id: "home", name: "Home & Living", attributes: ["Color", "Size", "Material"] },
   { id: "accessories", name: "Accessories", attributes: ["Color", "Size"] },
+  { id: "mobile", name: "Mobile & Tablets", attributes: ["Color", "Storage", "RAM"] },
 ];
 
 const attributeOptions: Record<string, string[]> = {
-  Color: ["Red", "Blue", "Green", "Black", "White", "Navy", "Gray"],
+  Color: ["Red", "Blue", "Green", "Black", "White", "Navy", "Gray", "Gold", "Silver"],
   Size: ["XS", "S", "M", "L", "XL", "XXL"],
   Storage: ["64GB", "128GB", "256GB", "512GB", "1TB"],
   RAM: ["4GB", "8GB", "16GB", "32GB"],
@@ -170,24 +177,24 @@ export function ProductForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid gap-1 bg-muted/50 p-1">
-          <TabsTrigger value="basic" className="gap-2">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid gap-1 bg-muted/50 p-1.5 rounded-xl">
+          <TabsTrigger value="basic" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Package className="h-4 w-4" />
             <span className="hidden sm:inline">Basic</span>
           </TabsTrigger>
-          <TabsTrigger value="media" className="gap-2">
+          <TabsTrigger value="media" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Image className="h-4 w-4" />
             <span className="hidden sm:inline">Media</span>
           </TabsTrigger>
-          <TabsTrigger value="pricing" className="gap-2">
+          <TabsTrigger value="pricing" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <DollarSign className="h-4 w-4" />
             <span className="hidden sm:inline">Pricing</span>
           </TabsTrigger>
-          <TabsTrigger value="variants" className="gap-2">
+          <TabsTrigger value="variants" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Layers className="h-4 w-4" />
             <span className="hidden sm:inline">Variants</span>
           </TabsTrigger>
-          <TabsTrigger value="seo" className="gap-2">
+          <TabsTrigger value="seo" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Globe className="h-4 w-4" />
             <span className="hidden sm:inline">SEO</span>
           </TabsTrigger>
@@ -195,31 +202,54 @@ export function ProductForm() {
 
         {/* Basic Tab */}
         <TabsContent value="basic" className="space-y-4 mt-6">
-          <Card>
-            <CardHeader>
+          <Card className="border-2 border-primary/10 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
-                <Box className="h-5 w-5 text-primary" />
-                Basic Information
+                <div className="h-10 w-10 rounded-lg gradient-brand flex items-center justify-center">
+                  <Box className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <span className="text-foreground">Basic Information</span>
+                  <CardDescription className="mt-1">Enter the core product details</CardDescription>
+                </div>
               </CardTitle>
-              <CardDescription>Enter the core product details</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
+            <CardContent className="space-y-6 pt-6">
+              <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="name" className="flex items-center gap-2 text-sm font-medium">
+                    <Tag className="h-4 w-4 text-primary" />
                     Product Name
                   </Label>
-                  <Input id="name" {...register("name")} placeholder="Enter product name" />
+                  <div className="relative">
+                    <Input 
+                      id="name" 
+                      {...register("name")} 
+                      placeholder="Enter product name"
+                      className="pl-10 h-12 border-2 focus:border-primary transition-colors"
+                    />
+                    <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  </div>
                   {errors.name && (
-                    <p className="text-sm text-destructive">{errors.name.message}</p>
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <X className="h-3 w-3" />
+                      {errors.name.message}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="slug">Slug</Label>
+                  <Label htmlFor="slug" className="flex items-center gap-2 text-sm font-medium">
+                    <Globe className="h-4 w-4 text-primary" />
+                    URL Slug
+                  </Label>
                   <div className="flex gap-2">
-                    <Input id="slug" {...register("slug")} placeholder="product-slug" />
-                    <Button type="button" variant="outline" onClick={generateSlug}>
+                    <Input 
+                      id="slug" 
+                      {...register("slug")} 
+                      placeholder="product-slug"
+                      className="h-12 border-2 focus:border-primary transition-colors"
+                    />
+                    <Button type="button" variant="outline" onClick={generateSlug} className="h-12 px-4">
                       Generate
                     </Button>
                   </div>
@@ -230,8 +260,8 @@ export function ProductForm() {
               </div>
 
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Settings className="h-4 w-4 text-muted-foreground" />
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <Settings className="h-4 w-4 text-primary" />
                   Category
                 </Label>
                 <Select
@@ -241,13 +271,18 @@ export function ProductForm() {
                     setValue("category", value);
                   }}
                 >
-                  <SelectTrigger className="w-full md:w-[300px]">
+                  <SelectTrigger className="w-full md:w-[400px] h-12 border-2">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
+                      <SelectItem key={cat.id} value={cat.id} className="py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
+                            <Package className="h-3 w-3 text-primary" />
+                          </div>
+                          {cat.name}
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -255,15 +290,21 @@ export function ProductForm() {
               </div>
 
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                  <FileText className="h-4 w-4 text-primary" />
                   Description
                 </Label>
-                <RichTextEditor
-                  value={description}
-                  onChange={setDescription}
-                  placeholder="Write a detailed product description. Use formatting to highlight key features..."
-                />
+                <div className="border-2 rounded-xl overflow-hidden focus-within:border-primary transition-colors">
+                  <RichTextEditor
+                    value={description}
+                    onChange={setDescription}
+                    placeholder="Write a detailed product description. Use formatting to highlight key features, specifications, and benefits..."
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  Pro tip: Use bullet points and headings for better readability
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -271,22 +312,26 @@ export function ProductForm() {
 
         {/* Media Tab */}
         <TabsContent value="media" className="space-y-4 mt-6">
-          <Card>
-            <CardHeader>
+          <Card className="border-2 border-primary/10 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
-                <Image className="h-5 w-5 text-primary" />
-                Product Images
+                <div className="h-10 w-10 rounded-lg gradient-brand flex items-center justify-center">
+                  <Image className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <span className="text-foreground">Product Images</span>
+                  <CardDescription className="mt-1">Add and organize product photos</CardDescription>
+                </div>
               </CardTitle>
-              <CardDescription>Add and organize product photos</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
                 {images.map((img) => (
                   <div
                     key={img.id}
                     className={cn(
-                      "relative group aspect-square rounded-xl overflow-hidden border-2 transition-all",
-                      img.isPrimary ? "border-primary ring-2 ring-primary/20" : "border-border"
+                      "relative group aspect-square rounded-xl overflow-hidden border-2 transition-all shadow-md hover:shadow-lg",
+                      img.isPrimary ? "border-secondary ring-4 ring-secondary/20" : "border-border"
                     )}
                   >
                     <img
@@ -294,14 +339,15 @@ export function ProductForm() {
                       alt="Product"
                       className="h-full w-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <div className="absolute inset-0 bg-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       {!img.isPrimary && (
                         <Button
                           type="button"
                           size="sm"
-                          variant="secondary"
                           onClick={() => setPrimaryImage(img.id)}
+                          className="gap-1"
                         >
+                          <Star className="h-3 w-3" />
                           Primary
                         </Button>
                       )}
@@ -316,7 +362,8 @@ export function ProductForm() {
                       </Button>
                     </div>
                     {img.isPrimary && (
-                      <Badge className="absolute top-2 left-2 bg-primary">
+                      <Badge className="absolute top-2 left-2 bg-secondary text-secondary-foreground gap-1">
+                        <Star className="h-3 w-3" />
                         Primary
                       </Badge>
                     )}
@@ -325,85 +372,141 @@ export function ProductForm() {
                 <button
                   type="button"
                   onClick={addImage}
-                  className="aspect-square rounded-xl border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center gap-2 hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="aspect-square rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center gap-2 hover:bg-primary/10 hover:border-primary transition-all cursor-pointer group"
                 >
-                  <ImagePlus className="h-8 w-8 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Add Image</span>
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <ImagePlus className="h-6 w-6 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-primary">Add Image</span>
                 </button>
               </div>
+              <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1">
+                <CheckCircle className="h-3 w-3 text-success" />
+                First image will be set as primary by default
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Pricing Tab */}
         <TabsContent value="pricing" className="space-y-4 mt-6">
-          <Card>
-            <CardHeader>
+          <Card className="border-2 border-primary/10 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-primary" />
-                Pricing & Inventory
+                <div className="h-10 w-10 rounded-lg gradient-brand flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <span className="text-foreground">Pricing & Inventory</span>
+                  <CardDescription className="mt-1">Set prices and manage stock</CardDescription>
+                </div>
               </CardTitle>
-              <CardDescription>Set prices and manage stock</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+            <CardContent className="space-y-6 pt-6">
+              <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="basePrice">Base Price ($)</Label>
-                  <Input
-                    id="basePrice"
-                    type="number"
-                    step="0.01"
-                    {...register("basePrice", { valueAsNumber: true })}
-                    placeholder="0.00"
-                  />
+                  <Label htmlFor="basePrice" className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    Base Price (Rs.)
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="basePrice"
+                      type="number"
+                      step="0.01"
+                      {...register("basePrice", { valueAsNumber: true })}
+                      placeholder="0.00"
+                      className="pl-12 h-12 border-2 text-lg font-semibold"
+                    />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">Rs.</span>
+                  </div>
                   {errors.basePrice && (
                     <p className="text-sm text-destructive">{errors.basePrice.message}</p>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="salePrice">Sale Price ($)</Label>
-                  <Input
-                    id="salePrice"
-                    type="number"
-                    step="0.01"
-                    {...register("salePrice", { valueAsNumber: true })}
-                    placeholder="0.00"
-                  />
+                  <Label htmlFor="salePrice" className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-secondary" />
+                    Sale Price (Rs.)
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="salePrice"
+                      type="number"
+                      step="0.01"
+                      {...register("salePrice", { valueAsNumber: true })}
+                      placeholder="0.00"
+                      className="pl-12 h-12 border-2 text-lg font-semibold border-secondary/30 focus:border-secondary"
+                    />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">Rs.</span>
+                  </div>
                 </div>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
+              
+              <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="sku">SKU</Label>
-                  <Input id="sku" {...register("sku")} placeholder="PRD-001" />
+                  <Label htmlFor="sku" className="flex items-center gap-2">
+                    <Barcode className="h-4 w-4 text-primary" />
+                    SKU Code
+                  </Label>
+                  <Input 
+                    id="sku" 
+                    {...register("sku")} 
+                    placeholder="PRD-001"
+                    className="h-12 border-2 font-mono"
+                  />
                   {errors.sku && (
                     <p className="text-sm text-destructive">{errors.sku.message}</p>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="stock">Stock Quantity</Label>
+                  <Label htmlFor="stock" className="flex items-center gap-2">
+                    <Archive className="h-4 w-4 text-primary" />
+                    Stock Quantity
+                  </Label>
                   <Input
                     id="stock"
                     type="number"
                     {...register("stock", { valueAsNumber: true })}
                     placeholder="0"
+                    className="h-12 border-2"
                   />
                 </div>
               </div>
+              
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status" className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-primary" />
+                  Status
+                </Label>
                 <Select
                   defaultValue="draft"
                   onValueChange={(value) =>
                     setValue("status", value as "active" | "draft" | "archived")
                   }
                 >
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger className="w-[200px] h-12 border-2">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
+                    <SelectItem value="active">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-success" />
+                        Active
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="draft">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-warning" />
+                        Draft
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="archived">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+                        Archived
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -413,23 +516,27 @@ export function ProductForm() {
 
         {/* Variants Tab */}
         <TabsContent value="variants" className="space-y-4 mt-6">
-          <Card>
-            <CardHeader>
+          <Card className="border-2 border-primary/10 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
-                <Layers className="h-5 w-5 text-primary" />
-                Product Variants
+                <div className="h-10 w-10 rounded-lg gradient-brand flex items-center justify-center">
+                  <Layers className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <span className="text-foreground">Product Variants</span>
+                  <CardDescription className="mt-1">
+                    {selectedCategory
+                      ? `Add variants based on ${categories.find((c) => c.id === selectedCategory)?.name} attributes`
+                      : "Select a category first to see available attributes"}
+                  </CardDescription>
+                </div>
               </CardTitle>
-              <CardDescription>
-                {selectedCategory
-                  ? `Add variants based on ${categories.find((c) => c.id === selectedCategory)?.name} attributes`
-                  : "Select a category first to see available attributes"}
-              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               {!selectedCategory && (
-                <div className="rounded-lg border border-dashed border-border p-6 text-center">
-                  <Settings className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-muted-foreground">
+                <div className="rounded-xl border-2 border-dashed border-primary/20 p-8 text-center bg-primary/5">
+                  <Settings className="h-12 w-12 text-primary/40 mx-auto mb-3" />
+                  <p className="text-muted-foreground font-medium">
                     Please select a category in the Basic tab to enable variant attributes
                   </p>
                 </div>
@@ -438,10 +545,13 @@ export function ProductForm() {
               {selectedCategory && variants.map((variant) => (
                 <div
                   key={variant.id}
-                  className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-muted/20 p-4"
+                  className="flex flex-wrap items-end gap-4 rounded-xl border-2 border-border bg-card p-4 shadow-sm"
                 >
                   <div className="flex-1 min-w-[150px] space-y-2">
-                    <Label>Attribute</Label>
+                    <Label className="flex items-center gap-1 text-sm">
+                      <Tag className="h-3 w-3 text-primary" />
+                      Attribute
+                    </Label>
                     <Select
                       value={variant.attribute}
                       onValueChange={(value) => {
@@ -449,7 +559,7 @@ export function ProductForm() {
                         updateVariant(variant.id, "value", "");
                       }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-11">
                         <SelectValue placeholder="Select attribute" />
                       </SelectTrigger>
                       <SelectContent>
@@ -462,13 +572,13 @@ export function ProductForm() {
                     </Select>
                   </div>
                   <div className="flex-1 min-w-[150px] space-y-2">
-                    <Label>Value</Label>
+                    <Label className="text-sm">Value</Label>
                     <Select
                       value={variant.value}
                       onValueChange={(value) => updateVariant(variant.id, "value", value)}
                       disabled={!variant.attribute}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-11">
                         <SelectValue placeholder="Select value" />
                       </SelectTrigger>
                       <SelectContent>
@@ -480,8 +590,8 @@ export function ProductForm() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-28 space-y-2">
-                    <Label>Price (+)</Label>
+                  <div className="w-32 space-y-2">
+                    <Label className="text-sm">Price (+Rs.)</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -490,10 +600,11 @@ export function ProductForm() {
                         updateVariant(variant.id, "price", parseFloat(e.target.value) || 0)
                       }
                       placeholder="0.00"
+                      className="h-11"
                     />
                   </div>
-                  <div className="w-24 space-y-2">
-                    <Label>Stock</Label>
+                  <div className="w-28 space-y-2">
+                    <Label className="text-sm">Stock</Label>
                     <Input
                       type="number"
                       value={variant.stock}
@@ -501,6 +612,7 @@ export function ProductForm() {
                         updateVariant(variant.id, "stock", parseInt(e.target.value) || 0)
                       }
                       placeholder="0"
+                      className="h-11"
                     />
                   </div>
                   <Button
@@ -508,7 +620,7 @@ export function ProductForm() {
                     variant="ghost"
                     size="icon"
                     onClick={() => removeVariant(variant.id)}
-                    className="text-destructive hover:text-destructive shrink-0"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 h-11 w-11"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -520,7 +632,7 @@ export function ProductForm() {
                   type="button"
                   variant="outline"
                   onClick={addVariant}
-                  className="gap-2"
+                  className="gap-2 h-12 border-2 border-dashed border-primary/30 hover:border-primary hover:bg-primary/5"
                 >
                   <Plus className="h-4 w-4" />
                   Add Variant
@@ -532,74 +644,106 @@ export function ProductForm() {
 
         {/* SEO Tab */}
         <TabsContent value="seo" className="space-y-4 mt-6">
-          <Card>
-            <CardHeader>
+          <Card className="border-2 border-primary/10 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-primary" />
-                SEO Configuration
+                <div className="h-10 w-10 rounded-lg gradient-brand flex items-center justify-center">
+                  <Globe className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <span className="text-foreground">SEO Configuration</span>
+                  <CardDescription className="mt-1">Optimize for search engines</CardDescription>
+                </div>
               </CardTitle>
-              <CardDescription>Optimize for search engines</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6 pt-6">
               <div className="space-y-2">
-                <Label htmlFor="metaTitle">Meta Title</Label>
+                <Label htmlFor="metaTitle" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Meta Title
+                </Label>
                 <Input
                   id="metaTitle"
                   {...register("metaTitle")}
                   placeholder="Enter meta title (max 60 characters)"
                   maxLength={60}
+                  className="h-12 border-2"
                 />
-                <p className="text-xs text-muted-foreground">
-                  {watch("metaTitle")?.length || 0}/60 characters
-                </p>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Optimal: 50-60 characters</span>
+                  <span className={cn(
+                    "font-medium",
+                    (watch("metaTitle")?.length || 0) > 60 ? "text-destructive" : "text-muted-foreground"
+                  )}>
+                    {watch("metaTitle")?.length || 0}/60
+                  </span>
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="metaDescription">Meta Description</Label>
+                <Label htmlFor="metaDescription" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  Meta Description
+                </Label>
                 <textarea
                   id="metaDescription"
                   {...register("metaDescription")}
                   placeholder="Enter meta description (max 160 characters)"
                   maxLength={160}
                   rows={3}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="w-full rounded-lg border-2 border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-primary transition-colors"
                 />
-                <p className="text-xs text-muted-foreground">
-                  {watch("metaDescription")?.length || 0}/160 characters
-                </p>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Optimal: 150-160 characters</span>
+                  <span className={cn(
+                    "font-medium",
+                    (watch("metaDescription")?.length || 0) > 160 ? "text-destructive" : "text-muted-foreground"
+                  )}>
+                    {watch("metaDescription")?.length || 0}/160
+                  </span>
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="canonicalUrl">Canonical URL</Label>
+                <Label htmlFor="canonicalUrl" className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-primary" />
+                  Canonical URL
+                </Label>
                 <Input
                   id="canonicalUrl"
                   {...register("canonicalUrl")}
-                  placeholder="https://example.com/products/your-product"
+                  placeholder="https://fatafatsewa.com/products/your-product"
+                  className="h-12 border-2"
                 />
               </div>
 
               {/* SEO Preview */}
-              <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-1">
-                <p className="text-sm text-muted-foreground">Search Result Preview</p>
-                <p className="text-primary font-medium truncate">
-                  {watch("metaTitle") || name || "Product Title"}
+              <div className="rounded-xl border-2 border-border bg-card p-4 space-y-2">
+                <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Search Result Preview
                 </p>
-                <p className="text-sm text-success truncate">
-                  https://yourstore.com/{watch("slug") || "product-slug"}
-                </p>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {watch("metaDescription") || "Product description will appear here..."}
-                </p>
+                <div className="bg-background rounded-lg p-4 border">
+                  <p className="text-primary font-medium text-lg truncate hover:underline cursor-pointer">
+                    {watch("metaTitle") || name || "Product Title"}
+                  </p>
+                  <p className="text-sm text-success truncate">
+                    https://fatafatsewa.com/{watch("slug") || "product-slug"}
+                  </p>
+                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                    {watch("metaDescription") || "Product description will appear here..."}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      <div className="flex gap-4">
-        <Button type="submit" className="gap-2">
-          <Package className="h-4 w-4" />
+      <div className="flex gap-4 pt-4">
+        <Button type="submit" size="lg" className="gap-2 h-12 px-8 gradient-brand border-0">
+          <Package className="h-5 w-5" />
           Save Product
         </Button>
-        <Button type="button" variant="outline" onClick={() => navigate("/products")}>
+        <Button type="button" variant="outline" size="lg" onClick={() => navigate("/products")} className="h-12 px-6">
           Cancel
         </Button>
       </div>
