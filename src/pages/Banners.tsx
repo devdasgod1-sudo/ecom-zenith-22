@@ -5,6 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -12,16 +20,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DataTablePagination } from "@/components/shared/DataTablePagination";
 import { cn } from "@/lib/utils";
 import { Edit, Eye, Image as ImageIcon, MoreHorizontal, Plus, Trash2, Upload } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "@/hooks/use-toast";
 
 interface Banner {
@@ -91,6 +99,9 @@ export default function Banners() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [viewingBanner, setViewingBanner] = useState<Banner | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+  const [search, setSearch] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     subtitle: "",
@@ -99,6 +110,19 @@ export default function Banners() {
     position: "hero",
     isActive: true,
   });
+
+  const filteredBanners = useMemo(() => {
+    return banners.filter((b) =>
+      b.title.toLowerCase().includes(search.toLowerCase()) ||
+      b.subtitle.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [banners, search]);
+
+  const totalPages = Math.ceil(filteredBanners.length / pageSize);
+  const paginatedBanners = filteredBanners.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const openCreateDialog = () => {
     setEditingBanner(null);
@@ -166,117 +190,154 @@ export default function Banners() {
       <div className="space-y-6">
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-3">
-          <Card className="p-4">
+          <div className="rounded-xl bg-card p-6 border border-border">
             <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <ImageIcon className="h-5 w-5 text-primary" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                <ImageIcon className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{banners.length}</p>
                 <p className="text-sm text-muted-foreground">Total Banners</p>
               </div>
             </div>
-          </Card>
-          <Card className="p-4">
+          </div>
+          <div className="rounded-xl bg-card p-6 border border-border">
             <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
-                <ImageIcon className="h-5 w-5 text-success" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10">
+                <ImageIcon className="h-6 w-6 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{activeBanners.length}</p>
                 <p className="text-sm text-muted-foreground">Active</p>
               </div>
             </div>
-          </Card>
-          <Card className="p-4">
+          </div>
+          <div className="rounded-xl bg-card p-6 border border-border">
             <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                <ImageIcon className="h-5 w-5 text-muted-foreground" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+                <ImageIcon className="h-6 w-6 text-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{inactiveBanners.length}</p>
                 <p className="text-sm text-muted-foreground">Inactive</p>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <p className="text-muted-foreground">
-            Manage promotional banners and hero images
-          </p>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <Input
+            placeholder="Search banners..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-xs"
+          />
           <Button onClick={openCreateDialog} className="gap-2">
             <Plus className="h-4 w-4" />
             Add Banner
           </Button>
         </div>
 
-        {/* Banner Grid */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {banners.map((banner) => (
-            <Card key={banner.id} className="overflow-hidden group">
-              <div className="relative aspect-[3/1] overflow-hidden bg-muted">
-                <img
-                  src={banner.imageUrl}
-                  alt={banner.title}
-                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <h3 className="text-lg font-semibold text-white">{banner.title}</h3>
-                  <p className="text-sm text-white/80">{banner.subtitle}</p>
-                </div>
-                <div className="absolute top-3 right-3 flex gap-2">
-                  <Badge
-                    className={cn(
-                      banner.isActive
-                        ? "bg-success/90 text-success-foreground"
-                        : "bg-muted/90 text-muted-foreground"
-                    )}
-                  >
-                    {banner.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </div>
-              </div>
-              <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline">{positionLabels[banner.position]}</Badge>
-                  <span className="text-sm text-muted-foreground">{banner.createdAt}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={banner.isActive}
-                    onCheckedChange={() => toggleActive(banner.id)}
-                  />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
+        {/* Table */}
+        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="w-[80px]">Image</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Position</TableHead>
+                <TableHead>Link</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="w-[120px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedBanners.map((banner) => (
+                <TableRow key={banner.id} className="group">
+                  <TableCell>
+                    <div className="h-12 w-16 rounded-lg overflow-hidden bg-muted">
+                      <img
+                        src={banner.imageUrl}
+                        alt={banner.title}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <p className="font-medium">{banner.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{banner.subtitle}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{positionLabels[banner.position]}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {banner.link || "-"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={banner.isActive}
+                        onCheckedChange={() => toggleActive(banner.id)}
+                      />
+                      <Badge className={cn(
+                        banner.isActive
+                          ? "bg-success/10 text-success"
+                          : "bg-muted text-muted-foreground"
+                      )}>
+                        {banner.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {banner.createdAt}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openViewDialog(banner)}
+                      >
+                        <Eye className="h-4 w-4" />
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => openViewDialog(banner)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openEditDialog(banner)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive"
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openEditDialog(banner)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => handleDelete(banner.id)}
                       >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            </Card>
-          ))}
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <DataTablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={filteredBanners.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+          />
         </div>
 
         {/* Create/Edit Dialog */}
@@ -379,6 +440,7 @@ export default function Banners() {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>{viewingBanner?.title}</DialogTitle>
+              <DialogDescription>Banner preview and details</DialogDescription>
             </DialogHeader>
             {viewingBanner && (
               <div className="space-y-4">

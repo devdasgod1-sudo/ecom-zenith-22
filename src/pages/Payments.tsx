@@ -19,13 +19,15 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DataTablePagination } from "@/components/shared/DataTablePagination";
 import { cn } from "@/lib/utils";
-import { Calendar, CreditCard, Eye, MoreHorizontal, Search } from "lucide-react";
+import { Calendar, CreditCard, Eye, MoreHorizontal, Package, Search, Share2 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { toast } from "@/hooks/use-toast";
 
 interface Payment {
   id: string;
@@ -36,19 +38,22 @@ interface Payment {
   method: string;
   status: "success" | "pending" | "failed";
   date: string;
+  productName: string;
+  productImage: string;
+  productSku: string;
 }
 
 const mockPayments: Payment[] = [
-  { id: "1", transactionId: "TXN-7284", customer: "Sarah Johnson", email: "sarah@email.com", amount: 234.50, method: "Visa ****4242", status: "success", date: "2024-01-15 14:32" },
-  { id: "2", transactionId: "TXN-7283", customer: "Michael Chen", email: "michael@email.com", amount: 189.00, method: "Mastercard ****5555", status: "pending", date: "2024-01-15 13:18" },
-  { id: "3", transactionId: "TXN-7282", customer: "Emma Wilson", email: "emma@email.com", amount: 432.00, method: "PayPal", status: "success", date: "2024-01-15 11:45" },
-  { id: "4", transactionId: "TXN-7281", customer: "James Brown", email: "james@email.com", amount: 78.50, method: "Visa ****1234", status: "failed", date: "2024-01-15 10:22" },
-  { id: "5", transactionId: "TXN-7280", customer: "Lisa Anderson", email: "lisa@email.com", amount: 567.00, method: "Mastercard ****8888", status: "success", date: "2024-01-14 16:55" },
-  { id: "6", transactionId: "TXN-7279", customer: "David Kim", email: "david@email.com", amount: 299.99, method: "Apple Pay", status: "success", date: "2024-01-14 15:30" },
-  { id: "7", transactionId: "TXN-7278", customer: "Anna Martinez", email: "anna@email.com", amount: 145.00, method: "Visa ****9876", status: "pending", date: "2024-01-08 14:12" },
-  { id: "8", transactionId: "TXN-7277", customer: "Robert Taylor", email: "robert@email.com", amount: 89.99, method: "PayPal", status: "success", date: "2024-01-05 12:08" },
-  { id: "9", transactionId: "TXN-7276", customer: "Jennifer White", email: "jennifer@email.com", amount: 356.00, method: "Visa ****3456", status: "success", date: "2023-12-28 09:45" },
-  { id: "10", transactionId: "TXN-7275", customer: "Thomas Lee", email: "thomas@email.com", amount: 123.50, method: "Mastercard ****7777", status: "failed", date: "2023-12-15 16:20" },
+  { id: "1", transactionId: "TXN-7284", customer: "Sarah Johnson", email: "sarah@email.com", amount: 234.50, method: "Visa ****4242", status: "success", date: "2024-01-15 14:32", productName: "iPhone 15 Pro", productImage: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=100&h=100&fit=crop", productSku: "APL-IP15P-256" },
+  { id: "2", transactionId: "TXN-7283", customer: "Michael Chen", email: "michael@email.com", amount: 189.00, method: "Mastercard ****5555", status: "pending", date: "2024-01-15 13:18", productName: "Samsung Galaxy S24", productImage: "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=100&h=100&fit=crop", productSku: "SAM-S24-128" },
+  { id: "3", transactionId: "TXN-7282", customer: "Emma Wilson", email: "emma@email.com", amount: 432.00, method: "PayPal", status: "success", date: "2024-01-15 11:45", productName: "MacBook Air M3", productImage: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=100&h=100&fit=crop", productSku: "APL-MBA-M3" },
+  { id: "4", transactionId: "TXN-7281", customer: "James Brown", email: "james@email.com", amount: 78.50, method: "Visa ****1234", status: "failed", date: "2024-01-15 10:22", productName: "AirPods Pro", productImage: "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=100&h=100&fit=crop", productSku: "APL-APP-2" },
+  { id: "5", transactionId: "TXN-7280", customer: "Lisa Anderson", email: "lisa@email.com", amount: 567.00, method: "Mastercard ****8888", status: "success", date: "2024-01-14 16:55", productName: "LG OLED TV 55\"", productImage: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=100&h=100&fit=crop", productSku: "LG-OLED-55" },
+  { id: "6", transactionId: "TXN-7279", customer: "David Kim", email: "david@email.com", amount: 299.99, method: "Apple Pay", status: "success", date: "2024-01-14 15:30", productName: "Sony WH-1000XM5", productImage: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=100&h=100&fit=crop", productSku: "SNY-WH5" },
+  { id: "7", transactionId: "TXN-7278", customer: "Anna Martinez", email: "anna@email.com", amount: 145.00, method: "Visa ****9876", status: "pending", date: "2024-01-08 14:12", productName: "iPad Mini", productImage: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=100&h=100&fit=crop", productSku: "APL-IPM-64" },
+  { id: "8", transactionId: "TXN-7277", customer: "Robert Taylor", email: "robert@email.com", amount: 89.99, method: "PayPal", status: "success", date: "2024-01-05 12:08", productName: "Logitech MX Master", productImage: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=100&h=100&fit=crop", productSku: "LOG-MXM3" },
+  { id: "9", transactionId: "TXN-7276", customer: "Jennifer White", email: "jennifer@email.com", amount: 356.00, method: "Visa ****3456", status: "success", date: "2023-12-28 09:45", productName: "Nintendo Switch OLED", productImage: "https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?w=100&h=100&fit=crop", productSku: "NIN-SW-OLED" },
+  { id: "10", transactionId: "TXN-7275", customer: "Thomas Lee", email: "thomas@email.com", amount: 123.50, method: "Mastercard ****7777", status: "failed", date: "2023-12-15 16:20", productName: "Kindle Paperwhite", productImage: "https://images.unsplash.com/photo-1592434134753-a70f1c79f677?w=100&h=100&fit=crop", productSku: "AMZ-KPW" },
 ];
 
 const statusStyles = {
@@ -79,7 +84,8 @@ export default function Payments() {
     return mockPayments.filter((p) => {
       const matchesSearch =
         p.customer.toLowerCase().includes(search.toLowerCase()) ||
-        p.transactionId.toLowerCase().includes(search.toLowerCase());
+        p.transactionId.toLowerCase().includes(search.toLowerCase()) ||
+        p.productName.toLowerCase().includes(search.toLowerCase());
       
       if (!matchesSearch) return false;
       
@@ -120,6 +126,12 @@ export default function Payments() {
       failedCount: failed.length,
     };
   }, [filteredPayments]);
+
+  const handleShare = (payment: Payment) => {
+    const text = `Transaction: ${payment.transactionId}\nProduct: ${payment.productName}\nAmount: $${payment.amount.toFixed(2)}\nCustomer: ${payment.customer}`;
+    navigator.clipboard.writeText(text);
+    toast({ title: "Details copied to clipboard" });
+  };
 
   return (
     <AdminLayout title="Payments">
@@ -166,13 +178,13 @@ export default function Payments() {
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search transactions..."
+              placeholder="Search transactions or products..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {(["all", "day", "week", "month", "year"] as DateFilter[]).map((filter) => (
               <Button
                 key={filter}
@@ -196,7 +208,8 @@ export default function Payments() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead>Transaction ID</TableHead>
+                <TableHead>Transaction</TableHead>
+                <TableHead>Product</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Method</TableHead>
@@ -209,15 +222,26 @@ export default function Payments() {
               {paginatedPayments.map((payment) => (
                 <TableRow key={payment.id} className="group">
                   <TableCell className="font-mono text-sm">{payment.transactionId}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        <img src={payment.productImage} alt={payment.productName} className="h-full w-full object-cover" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm max-w-[150px] truncate">{payment.productName}</p>
+                        <p className="text-xs text-muted-foreground">{payment.productSku}</p>
+                      </div>
+                    </div>
+                  </TableCell>
                   <TableCell className="font-medium">{payment.customer}</TableCell>
                   <TableCell className="font-semibold">${payment.amount.toFixed(2)}</TableCell>
-                  <TableCell className="text-muted-foreground">{payment.method}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{payment.method}</TableCell>
                   <TableCell>
                     <Badge className={cn("capitalize", statusStyles[payment.status])}>
                       {payment.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{payment.date}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{payment.date}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -233,6 +257,10 @@ export default function Payments() {
                         <DropdownMenuItem onClick={() => setViewingPayment(payment)}>
                           <Eye className="mr-2 h-4 w-4" />
                           View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleShare(payment)}>
+                          <Share2 className="mr-2 h-4 w-4" />
+                          Share
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -259,9 +287,11 @@ export default function Payments() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Payment Details</DialogTitle>
+              <DialogDescription>Transaction information and product details</DialogDescription>
             </DialogHeader>
             {viewingPayment && (
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Transaction Header */}
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
                     <CreditCard className="h-6 w-6 text-primary" />
@@ -273,6 +303,25 @@ export default function Payments() {
                     </Badge>
                   </div>
                 </div>
+
+                {/* Product Info */}
+                <div className="rounded-lg bg-muted/30 p-4">
+                  <h4 className="font-medium text-sm text-muted-foreground mb-3 flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Product
+                  </h4>
+                  <div className="flex items-center gap-4">
+                    <div className="h-16 w-16 rounded-lg overflow-hidden bg-muted">
+                      <img src={viewingPayment.productImage} alt={viewingPayment.productName} className="h-full w-full object-cover" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{viewingPayment.productName}</p>
+                      <p className="text-sm text-muted-foreground">SKU: {viewingPayment.productSku}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Details */}
                 <div className="grid gap-3 text-sm">
                   <div className="flex justify-between py-2 border-b border-border">
                     <span className="text-muted-foreground">Customer</span>
@@ -295,6 +344,11 @@ export default function Payments() {
                     <span>{viewingPayment.date}</span>
                   </div>
                 </div>
+
+                <Button onClick={() => handleShare(viewingPayment)} variant="outline" className="w-full gap-2">
+                  <Share2 className="h-4 w-4" />
+                  Share Details
+                </Button>
               </div>
             )}
           </DialogContent>

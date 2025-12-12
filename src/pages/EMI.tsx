@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -14,6 +15,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -30,6 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTablePagination } from "@/components/shared/DataTablePagination";
 import { cn } from "@/lib/utils";
 import {
@@ -52,9 +55,23 @@ import {
   Calendar,
   DollarSign,
   Share2,
+  History,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Image as ImageIcon,
+  Package,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "@/hooks/use-toast";
+
+interface EMIPaymentHistory {
+  id: string;
+  month: number;
+  amount: number;
+  paidDate: string;
+  status: "paid" | "pending" | "overdue";
+}
 
 interface EMIApplication {
   id: string;
@@ -63,7 +80,9 @@ interface EMIApplication {
   email: string;
   phone: string;
   address: string;
+  ppPhoto: string;
   productName: string;
+  productImage: string;
   totalAmount: number;
   downPayment: number;
   emiAmount: number;
@@ -71,10 +90,13 @@ interface EMIApplication {
   interestRate: number;
   bankName: string;
   bankAccountNo: string;
+  cardNumber: string;
+  cardExpiry: string;
   cardLastFour: string;
   status: "pending" | "approved" | "rejected" | "active" | "completed";
   appliedDate: string;
   approvedDate?: string;
+  paymentHistory: EMIPaymentHistory[];
 }
 
 const mockEMIApplications: EMIApplication[] = [
@@ -85,18 +107,28 @@ const mockEMIApplications: EMIApplication[] = [
     email: "ram@email.com",
     phone: "+977-9841234567",
     address: "Kathmandu, Nepal",
+    ppPhoto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     productName: "Samsung Galaxy S24 Ultra",
+    productImage: "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=200&h=200&fit=crop",
     totalAmount: 180000,
     downPayment: 72000,
     emiAmount: 9500,
     tenure: 12,
     interestRate: 12,
     bankName: "Nepal Bank Ltd",
-    bankAccountNo: "****5678",
+    bankAccountNo: "1234567890123456",
+    cardNumber: "4242424242424242",
+    cardExpiry: "12/26",
     cardLastFour: "4242",
     status: "active",
     appliedDate: "2024-01-10",
     approvedDate: "2024-01-12",
+    paymentHistory: [
+      { id: "1", month: 1, amount: 9500, paidDate: "2024-02-10", status: "paid" },
+      { id: "2", month: 2, amount: 9500, paidDate: "2024-03-10", status: "paid" },
+      { id: "3", month: 3, amount: 9500, paidDate: "2024-04-10", status: "paid" },
+      { id: "4", month: 4, amount: 9500, paidDate: "", status: "pending" },
+    ],
   },
   {
     id: "2",
@@ -105,17 +137,22 @@ const mockEMIApplications: EMIApplication[] = [
     email: "sita@email.com",
     phone: "+977-9851234567",
     address: "Pokhara, Nepal",
+    ppPhoto: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
     productName: "MacBook Pro 14",
+    productImage: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=200&h=200&fit=crop",
     totalAmount: 350000,
     downPayment: 140000,
     emiAmount: 19000,
     tenure: 12,
     interestRate: 10,
     bankName: "Nabil Bank",
-    bankAccountNo: "****9012",
+    bankAccountNo: "9876543210987654",
+    cardNumber: "5555555555555555",
+    cardExpiry: "08/25",
     cardLastFour: "5555",
     status: "pending",
     appliedDate: "2024-01-14",
+    paymentHistory: [],
   },
   {
     id: "3",
@@ -124,18 +161,29 @@ const mockEMIApplications: EMIApplication[] = [
     email: "hari@email.com",
     phone: "+977-9861234567",
     address: "Biratnagar, Nepal",
+    ppPhoto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
     productName: "LG 55 OLED TV",
+    productImage: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=200&h=200&fit=crop",
     totalAmount: 220000,
     downPayment: 88000,
     emiAmount: 11800,
     tenure: 12,
     interestRate: 11,
     bankName: "Himalayan Bank",
-    bankAccountNo: "****3456",
+    bankAccountNo: "1122334455667788",
+    cardNumber: "4111111111111234",
+    cardExpiry: "03/27",
     cardLastFour: "1234",
     status: "completed",
     appliedDate: "2023-12-01",
     approvedDate: "2023-12-03",
+    paymentHistory: Array.from({ length: 12 }, (_, i) => ({
+      id: String(i + 1),
+      month: i + 1,
+      amount: 11800,
+      paidDate: `2024-0${String(i + 1).padStart(2, "0")}-03`,
+      status: "paid" as const,
+    })),
   },
 ];
 
@@ -147,6 +195,12 @@ const statusStyles = {
   completed: "bg-muted text-muted-foreground",
 };
 
+const paymentStatusStyles = {
+  paid: "bg-success/10 text-success",
+  pending: "bg-warning/10 text-warning",
+  overdue: "bg-destructive/10 text-destructive",
+};
+
 export default function EMI() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -156,6 +210,8 @@ export default function EMI() {
   const [viewingApp, setViewingApp] = useState<EMIApplication | null>(null);
   const [editingApp, setEditingApp] = useState<EMIApplication | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editStatusApp, setEditStatusApp] = useState<EMIApplication | null>(null);
+  const [newStatus, setNewStatus] = useState<string>("");
 
   const filteredApplications = useMemo(() => {
     return applications.filter((app) => {
@@ -188,6 +244,17 @@ export default function EMI() {
     toast({ title: "Application deleted" });
   };
 
+  const handleStatusUpdate = () => {
+    if (editStatusApp && newStatus) {
+      setApplications(applications.map((a) =>
+        a.id === editStatusApp.id ? { ...a, status: newStatus as EMIApplication["status"] } : a
+      ));
+      toast({ title: "Status updated", description: `Application status changed to ${newStatus}` });
+      setEditStatusApp(null);
+      setNewStatus("");
+    }
+  };
+
   const handleShare = (app: EMIApplication) => {
     const text = `EMI Application: ${app.applicationNo}\nCustomer: ${app.customerName}\nProduct: ${app.productName}\nAmount: Rs. ${app.totalAmount.toLocaleString()}`;
     navigator.clipboard.writeText(text);
@@ -206,16 +273,14 @@ export default function EMI() {
               .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #1e40af; padding-bottom: 20px; }
               .logo { font-size: 28px; font-weight: bold; color: #1e40af; }
               .logo span { color: #eab308; }
-              .doc-title { font-size: 18px; color: #666; margin-top: 10px; }
+              .photo-section { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+              .pp-photo { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #1e40af; }
               .section { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; }
               .section-title { font-weight: bold; color: #1e40af; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; }
               .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ddd; }
               .label { color: #666; }
               .value { font-weight: 500; }
               .highlight { background: linear-gradient(135deg, #1e40af, #eab308); color: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-              .highlight .row { border-bottom-color: rgba(255,255,255,0.2); }
-              .highlight .label { color: rgba(255,255,255,0.8); }
-              .highlight .value { color: white; }
               .footer { text-align: center; margin-top: 40px; color: #666; font-size: 12px; }
               .signature { margin-top: 60px; display: flex; justify-content: space-between; }
               .sig-box { width: 200px; text-align: center; }
@@ -225,8 +290,17 @@ export default function EMI() {
           <body>
             <div class="header">
               <div class="logo">Fatafat<span>Sewa</span></div>
-              <div class="doc-title">EMI Application Document</div>
+              <div>EMI Application Document</div>
               <div style="margin-top: 10px; color: #666;">Application No: ${app.applicationNo}</div>
+            </div>
+            
+            <div class="photo-section">
+              <img src="${app.ppPhoto}" class="pp-photo" alt="Customer Photo" />
+              <div>
+                <h2 style="margin: 0;">${app.customerName}</h2>
+                <p style="color: #666; margin: 5px 0;">${app.email}</p>
+                <p style="color: #666; margin: 0;">${app.phone}</p>
+              </div>
             </div>
             
             <div class="section">
@@ -253,19 +327,16 @@ export default function EMI() {
             </div>
             
             <div class="section">
-              <div class="section-title">Bank Information</div>
+              <div class="section-title">Bank & Card Information</div>
               <div class="row"><span class="label">Bank Name</span><span class="value">${app.bankName}</span></div>
-              <div class="row"><span class="label">Account Number</span><span class="value">${app.bankAccountNo}</span></div>
-              <div class="row"><span class="label">Card (Last 4 digits)</span><span class="value">****${app.cardLastFour}</span></div>
+              <div class="row"><span class="label">Account Number</span><span class="value">****${app.bankAccountNo.slice(-4)}</span></div>
+              <div class="row"><span class="label">Card Number</span><span class="value">****${app.cardLastFour}</span></div>
+              <div class="row"><span class="label">Card Expiry</span><span class="value">${app.cardExpiry}</span></div>
             </div>
             
             <div class="signature">
-              <div class="sig-box">
-                <div class="sig-line">Customer Signature</div>
-              </div>
-              <div class="sig-box">
-                <div class="sig-line">Authorized Signature</div>
-              </div>
+              <div class="sig-box"><div class="sig-line">Customer Signature</div></div>
+              <div class="sig-box"><div class="sig-line">Authorized Signature</div></div>
             </div>
             
             <div class="footer">
@@ -365,31 +436,37 @@ export default function EMI() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead>Application</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>EMI/Month</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead className="w-[140px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedApps.map((app) => (
                 <TableRow key={app.id} className="group">
-                  <TableCell className="font-mono text-sm">{app.applicationNo}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="h-4 w-4 text-primary" />
-                      </div>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 border-2 border-primary/20">
+                        <AvatarImage src={app.ppPhoto} alt={app.customerName} />
+                        <AvatarFallback>{app.customerName.charAt(0)}</AvatarFallback>
+                      </Avatar>
                       <div>
                         <p className="font-medium">{app.customerName}</p>
-                        <p className="text-xs text-muted-foreground">{app.phone}</p>
+                        <p className="text-xs text-muted-foreground">{app.applicationNo}</p>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate">{app.productName}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        <img src={app.productImage} alt={app.productName} className="h-full w-full object-cover" />
+                      </div>
+                      <span className="max-w-[150px] truncate">{app.productName}</span>
+                    </div>
+                  </TableCell>
                   <TableCell className="font-semibold">Rs. {app.totalAmount.toLocaleString()}</TableCell>
                   <TableCell className="text-primary font-medium">Rs. {app.emiAmount.toLocaleString()}</TableCell>
                   <TableCell>
@@ -404,6 +481,7 @@ export default function EMI() {
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => setViewingApp(app)}
+                        title="View Details"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -411,7 +489,11 @@ export default function EMI() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => setEditingApp(app)}
+                        onClick={() => {
+                          setEditStatusApp(app);
+                          setNewStatus(app.status);
+                        }}
+                        title="Edit Status"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -458,400 +540,509 @@ export default function EMI() {
           />
         </div>
 
-        {/* View Dialog - PDF Style */}
+        {/* View Dialog with Tabs */}
         <Dialog open={!!viewingApp} onOpenChange={() => setViewingApp(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" />
                 EMI Application Details
               </DialogTitle>
+              <DialogDescription>View complete application details and payment history</DialogDescription>
             </DialogHeader>
             {viewingApp && (
-              <div className="space-y-6">
-                {/* Header */}
-                <div className="text-center pb-4 border-b border-border">
-                  <h2 className="text-2xl font-bold gradient-brand-text">FatafatSewa</h2>
-                  <p className="text-muted-foreground">EMI Application Document</p>
-                  <p className="text-sm text-muted-foreground mt-1">{viewingApp.applicationNo}</p>
-                </div>
-
-                {/* Customer Info */}
-                <div className="rounded-lg bg-muted/30 p-4 space-y-3">
-                  <h3 className="font-semibold text-primary flex items-center gap-2">
+              <Tabs defaultValue="details" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="details" className="gap-2">
                     <User className="h-4 w-4" />
-                    Customer Information
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Name:</span>
-                      <span className="font-medium">{viewingApp.customerName}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Email:</span>
-                      <span>{viewingApp.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Phone:</span>
-                      <span>{viewingApp.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Address:</span>
-                      <span>{viewingApp.address}</span>
+                    Details
+                  </TabsTrigger>
+                  <TabsTrigger value="documents" className="gap-2">
+                    <FileText className="h-4 w-4" />
+                    Documents
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="gap-2">
+                    <History className="h-4 w-4" />
+                    Payment History
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="details" className="space-y-6 mt-4">
+                  {/* Customer with Photo */}
+                  <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30">
+                    <Avatar className="h-20 w-20 border-4 border-primary/20">
+                      <AvatarImage src={viewingApp.ppPhoto} alt={viewingApp.customerName} />
+                      <AvatarFallback className="text-2xl">{viewingApp.customerName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="text-xl font-semibold">{viewingApp.customerName}</h3>
+                      <p className="text-muted-foreground">{viewingApp.email}</p>
+                      <p className="text-sm text-muted-foreground">{viewingApp.phone}</p>
+                      <Badge className={cn("mt-2 capitalize", statusStyles[viewingApp.status])}>
+                        {viewingApp.status}
+                      </Badge>
                     </div>
                   </div>
-                </div>
 
-                {/* EMI Details */}
-                <div className="rounded-lg gradient-brand p-4 text-primary-foreground space-y-3">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Calculator className="h-4 w-4" />
-                    EMI Details
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex justify-between py-2 border-b border-primary-foreground/20">
-                      <span className="opacity-80">Product</span>
-                      <span className="font-medium">{viewingApp.productName}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-primary-foreground/20">
-                      <span className="opacity-80">Total Amount</span>
-                      <span className="font-medium">Rs. {viewingApp.totalAmount.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-primary-foreground/20">
-                      <span className="opacity-80">Down Payment (40%)</span>
-                      <span className="font-medium">Rs. {viewingApp.downPayment.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-primary-foreground/20">
-                      <span className="opacity-80">Loan Amount</span>
-                      <span className="font-medium">Rs. {(viewingApp.totalAmount - viewingApp.downPayment).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-primary-foreground/20">
-                      <span className="opacity-80">Interest Rate</span>
-                      <span className="font-medium">{viewingApp.interestRate}% p.a.</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-primary-foreground/20">
-                      <span className="opacity-80">Tenure</span>
-                      <span className="font-medium">{viewingApp.tenure} Months</span>
-                    </div>
-                    <div className="col-span-2 flex justify-between py-2 text-lg">
-                      <span>Monthly EMI</span>
-                      <span className="font-bold">Rs. {viewingApp.emiAmount.toLocaleString()}</span>
+                  {/* Product Info */}
+                  <div className="rounded-lg bg-muted/30 p-4 space-y-3">
+                    <h3 className="font-semibold text-primary flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Product Information
+                    </h3>
+                    <div className="flex items-center gap-4">
+                      <div className="h-16 w-16 rounded-lg overflow-hidden bg-muted">
+                        <img src={viewingApp.productImage} alt={viewingApp.productName} className="h-full w-full object-cover" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{viewingApp.productName}</p>
+                        <p className="text-lg font-bold text-primary">Rs. {viewingApp.totalAmount.toLocaleString()}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Bank Info */}
-                <div className="rounded-lg bg-muted/30 p-4 space-y-3">
-                  <h3 className="font-semibold text-primary flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
-                    Bank Information
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex justify-between py-2 border-b border-border">
-                      <span className="text-muted-foreground">Bank Name</span>
-                      <span className="font-medium">{viewingApp.bankName}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-border">
-                      <span className="text-muted-foreground">Account No.</span>
-                      <span className="font-mono">{viewingApp.bankAccountNo}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-border">
-                      <span className="text-muted-foreground">Card</span>
-                      <span className="font-mono">****{viewingApp.cardLastFour}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-border">
-                      <span className="text-muted-foreground">Applied Date</span>
-                      <span>{viewingApp.appliedDate}</span>
+                  {/* EMI Details */}
+                  <div className="rounded-lg gradient-brand p-4 text-primary-foreground space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Calculator className="h-4 w-4" />
+                      EMI Details
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex justify-between py-2 border-b border-primary-foreground/20">
+                        <span className="opacity-80">Down Payment (40%)</span>
+                        <span className="font-medium">Rs. {viewingApp.downPayment.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-primary-foreground/20">
+                        <span className="opacity-80">Loan Amount</span>
+                        <span className="font-medium">Rs. {(viewingApp.totalAmount - viewingApp.downPayment).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-primary-foreground/20">
+                        <span className="opacity-80">Interest Rate</span>
+                        <span className="font-medium">{viewingApp.interestRate}% p.a.</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-primary-foreground/20">
+                        <span className="opacity-80">Tenure</span>
+                        <span className="font-medium">{viewingApp.tenure} Months</span>
+                      </div>
+                      <div className="col-span-2 flex justify-between py-2 text-lg">
+                        <span>Monthly EMI</span>
+                        <span className="font-bold">Rs. {viewingApp.emiAmount.toLocaleString()}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Actions */}
-                <div className="flex gap-2 pt-4 border-t border-border">
-                  <Button onClick={() => handlePrint(viewingApp)} className="gap-2">
-                    <Printer className="h-4 w-4" />
-                    Print Document
-                  </Button>
-                  <Button variant="outline" onClick={() => handleShare(viewingApp)} className="gap-2">
-                    <Share2 className="h-4 w-4" />
-                    Share
-                  </Button>
-                </div>
-              </div>
+                  {/* Bank & Card Info */}
+                  <div className="rounded-lg bg-muted/30 p-4 space-y-3">
+                    <h3 className="font-semibold text-primary flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Bank & Card Information
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex justify-between py-2 border-b border-border">
+                        <span className="text-muted-foreground">Bank Name</span>
+                        <span className="font-medium">{viewingApp.bankName}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-border">
+                        <span className="text-muted-foreground">Account No.</span>
+                        <span className="font-mono">****{viewingApp.bankAccountNo.slice(-4)}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-border">
+                        <span className="text-muted-foreground">Card Number</span>
+                        <span className="font-mono">****{viewingApp.cardLastFour}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-border">
+                        <span className="text-muted-foreground">Card Expiry</span>
+                        <span>{viewingApp.cardExpiry}</span>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="documents" className="space-y-4 mt-4">
+                  <div className="text-center py-8 border rounded-lg border-dashed">
+                    <div className="flex flex-col items-center gap-4">
+                      <Avatar className="h-32 w-32 border-4 border-primary/20">
+                        <AvatarImage src={viewingApp.ppPhoto} alt="PP Photo" />
+                        <AvatarFallback className="text-4xl">{viewingApp.customerName.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">Profile Photo</p>
+                        <p className="text-sm text-muted-foreground">Customer's PP Photo</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={() => handlePrint(viewingApp)} className="gap-2 flex-1">
+                      <Printer className="h-4 w-4" />
+                      Print Document
+                    </Button>
+                    <Button variant="outline" onClick={() => handleShare(viewingApp)} className="gap-2 flex-1">
+                      <Share2 className="h-4 w-4" />
+                      Share
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="history" className="mt-4">
+                  {viewingApp.paymentHistory.length > 0 ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-muted-foreground">
+                          {viewingApp.paymentHistory.filter((p) => p.status === "paid").length} of {viewingApp.tenure} payments completed
+                        </p>
+                        <Badge variant="outline">
+                          Rs. {(viewingApp.paymentHistory.filter((p) => p.status === "paid").length * viewingApp.emiAmount).toLocaleString()} paid
+                        </Badge>
+                      </div>
+                      <div className="rounded-lg border border-border overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/50">
+                              <TableHead>Month</TableHead>
+                              <TableHead>Amount</TableHead>
+                              <TableHead>Paid Date</TableHead>
+                              <TableHead>Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {viewingApp.paymentHistory.map((payment) => (
+                              <TableRow key={payment.id}>
+                                <TableCell className="font-medium">Month {payment.month}</TableCell>
+                                <TableCell>Rs. {payment.amount.toLocaleString()}</TableCell>
+                                <TableCell>{payment.paidDate || "-"}</TableCell>
+                                <TableCell>
+                                  <Badge className={cn("capitalize", paymentStatusStyles[payment.status])}>
+                                    {payment.status === "paid" && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                                    {payment.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
+                                    {payment.status === "overdue" && <XCircle className="h-3 w-3 mr-1" />}
+                                    {payment.status}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No payment history yet</p>
+                      <p className="text-sm">Payments will appear here once the EMI is activated</p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             )}
           </DialogContent>
         </Dialog>
 
-        {/* Add/Edit Dialog */}
-        <EMIFormDialog
-          open={isAddDialogOpen || !!editingApp}
-          onOpenChange={(open) => {
-            if (!open) {
-              setIsAddDialogOpen(false);
-              setEditingApp(null);
-            }
-          }}
-          editData={editingApp}
-          onSave={(data) => {
-            if (editingApp) {
-              setApplications(applications.map((a) => (a.id === editingApp.id ? { ...a, ...data } : a)));
-              toast({ title: "Application updated" });
-            } else {
-              const newApp: EMIApplication = {
-                id: crypto.randomUUID(),
-                applicationNo: `EMI-2024-${String(applications.length + 1).padStart(3, "0")}`,
-                customerName: data.customerName || "",
-                email: data.email || "",
-                phone: data.phone || "",
-                address: data.address || "",
-                productName: data.productName || "",
-                totalAmount: data.totalAmount || 0,
-                downPayment: data.downPayment || 0,
-                emiAmount: data.emiAmount || 0,
-                tenure: data.tenure || 12,
-                interestRate: data.interestRate || 12,
-                bankName: data.bankName || "",
-                bankAccountNo: data.bankAccountNo || "",
-                cardLastFour: data.cardLastFour || "",
-                status: "pending",
-                appliedDate: new Date().toISOString().split("T")[0],
-              };
-              setApplications([newApp, ...applications]);
-              toast({ title: "Application created" });
-            }
-            setIsAddDialogOpen(false);
-            setEditingApp(null);
-          }}
-        />
+        {/* Edit Status Dialog */}
+        <Dialog open={!!editStatusApp} onOpenChange={() => setEditStatusApp(null)}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Update Application Status</DialogTitle>
+              <DialogDescription>
+                Change the status for {editStatusApp?.applicationNo}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Current Status</Label>
+                <Badge className={cn("capitalize", editStatusApp ? statusStyles[editStatusApp.status] : "")}>
+                  {editStatusApp?.status}
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                <Label>New Status</Label>
+                <Select value={newStatus} onValueChange={setNewStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setEditStatusApp(null)}>Cancel</Button>
+              <Button onClick={handleStatusUpdate}>Update Status</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Dialog - simplified for now */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle>New EMI Application</DialogTitle>
+              <DialogDescription>Create a new EMI application</DialogDescription>
+            </DialogHeader>
+            <EMIFormContent
+              onSave={(data) => {
+                const newApp: EMIApplication = {
+                  id: crypto.randomUUID(),
+                  applicationNo: `EMI-2024-${String(applications.length + 1).padStart(3, "0")}`,
+                  ...data,
+                  status: "pending",
+                  appliedDate: new Date().toISOString().split("T")[0],
+                  paymentHistory: [],
+                };
+                setApplications([newApp, ...applications]);
+                toast({ title: "Application created" });
+                setIsAddDialogOpen(false);
+              }}
+              onCancel={() => setIsAddDialogOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );
 }
 
-function EMIFormDialog({
-  open,
-  onOpenChange,
-  editData,
+function EMIFormContent({
   onSave,
+  onCancel,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  editData: EMIApplication | null;
-  onSave: (data: Partial<EMIApplication>) => void;
+  onSave: (data: Omit<EMIApplication, "id" | "applicationNo" | "status" | "appliedDate" | "paymentHistory">) => void;
+  onCancel: () => void;
 }) {
   const [formData, setFormData] = useState({
-    customerName: editData?.customerName || "",
-    email: editData?.email || "",
-    phone: editData?.phone || "",
-    address: editData?.address || "",
-    productName: editData?.productName || "",
-    totalAmount: editData?.totalAmount || 0,
-    tenure: editData?.tenure || 12,
-    interestRate: editData?.interestRate || 12,
-    bankName: editData?.bankName || "",
-    bankAccountNo: editData?.bankAccountNo || "",
-    cardLastFour: editData?.cardLastFour || "",
+    customerName: "",
+    email: "",
+    phone: "",
+    address: "",
+    ppPhoto: "",
+    productName: "",
+    productImage: "",
+    totalAmount: 0,
+    tenure: 12,
+    interestRate: 12,
+    bankName: "",
+    bankAccountNo: "",
+    cardNumber: "",
+    cardExpiry: "",
+    cardLastFour: "",
   });
 
   const downPayment = formData.totalAmount * 0.4;
   const loanAmount = formData.totalAmount - downPayment;
   const monthlyRate = formData.interestRate / 12 / 100;
-  const emiAmount = Math.round(
+  const emiAmount = loanAmount > 0 ? Math.round(
     (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, formData.tenure)) /
       (Math.pow(1 + monthlyRate, formData.tenure) - 1)
-  );
+  ) : 0;
+
+  const handleSubmit = () => {
+    onSave({
+      ...formData,
+      downPayment,
+      emiAmount,
+    });
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
-        <DialogHeader>
-          <DialogTitle>{editData ? "Edit EMI Application" : "New EMI Application"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6">
-          {/* Customer Info */}
-          <div className="space-y-4">
-            <h3 className="font-medium flex items-center gap-2 text-primary">
-              <User className="h-4 w-4" />
-              Customer Information
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Full Name</Label>
-                <Input
-                  value={formData.customerName}
-                  onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                  placeholder="Enter full name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="Enter email"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Phone</Label>
-                <Input
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+977-98XXXXXXXX"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Address</Label>
-                <Input
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="City, Country"
-                />
-              </div>
-            </div>
+    <div className="space-y-6">
+      {/* Customer Info */}
+      <div className="space-y-4">
+        <h3 className="font-medium flex items-center gap-2 text-primary">
+          <User className="h-4 w-4" />
+          Customer Information
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Full Name</Label>
+            <Input
+              value={formData.customerName}
+              onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+              placeholder="Enter full name"
+            />
           </div>
-
-          {/* Product & EMI */}
-          <div className="space-y-4">
-            <h3 className="font-medium flex items-center gap-2 text-primary">
-              <Calculator className="h-4 w-4" />
-              Product & EMI Details
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2 col-span-2">
-                <Label>Product Name</Label>
-                <Input
-                  value={formData.productName}
-                  onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
-                  placeholder="Enter product name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Total Amount (Rs.)</Label>
-                <Input
-                  type="number"
-                  value={formData.totalAmount}
-                  onChange={(e) => setFormData({ ...formData, totalAmount: Number(e.target.value) })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Tenure (Months)</Label>
-                <Select
-                  value={String(formData.tenure)}
-                  onValueChange={(v) => setFormData({ ...formData, tenure: Number(v) })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="6">6 Months</SelectItem>
-                    <SelectItem value="12">12 Months</SelectItem>
-                    <SelectItem value="18">18 Months</SelectItem>
-                    <SelectItem value="24">24 Months</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Interest Rate (%)</Label>
-                <Input
-                  type="number"
-                  value={formData.interestRate}
-                  onChange={(e) => setFormData({ ...formData, interestRate: Number(e.target.value) })}
-                  placeholder="12"
-                />
-              </div>
-            </div>
-
-            {/* EMI Preview */}
-            {formData.totalAmount > 0 && (
-              <div className="rounded-lg gradient-brand p-4 text-primary-foreground">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-sm opacity-80">Down Payment (40%)</p>
-                    <p className="text-lg font-bold">Rs. {downPayment.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm opacity-80">Loan Amount</p>
-                    <p className="text-lg font-bold">Rs. {loanAmount.toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm opacity-80">Monthly EMI</p>
-                    <p className="text-lg font-bold">Rs. {emiAmount.toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
-            )}
+          <div className="space-y-2">
+            <Label>Email</Label>
+            <Input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="Enter email"
+            />
           </div>
-
-          {/* Bank Info */}
-          <div className="space-y-4">
-            <h3 className="font-medium flex items-center gap-2 text-primary">
-              <Building2 className="h-4 w-4" />
-              Bank Information
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Bank Name</Label>
-                <Select
-                  value={formData.bankName}
-                  onValueChange={(v) => setFormData({ ...formData, bankName: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select bank" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Nepal Bank Ltd">Nepal Bank Ltd</SelectItem>
-                    <SelectItem value="Nabil Bank">Nabil Bank</SelectItem>
-                    <SelectItem value="Himalayan Bank">Himalayan Bank</SelectItem>
-                    <SelectItem value="NIC Asia Bank">NIC Asia Bank</SelectItem>
-                    <SelectItem value="Global IME Bank">Global IME Bank</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Account Number</Label>
-                <Input
-                  value={formData.bankAccountNo}
-                  onChange={(e) => setFormData({ ...formData, bankAccountNo: e.target.value })}
-                  placeholder="****1234"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Credit Card (Last 4 digits)</Label>
-                <Input
-                  value={formData.cardLastFour}
-                  onChange={(e) => setFormData({ ...formData, cardLastFour: e.target.value })}
-                  placeholder="1234"
-                  maxLength={4}
-                />
-              </div>
-            </div>
+          <div className="space-y-2">
+            <Label>Phone</Label>
+            <Input
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              placeholder="+977-98XXXXXXXX"
+            />
           </div>
-
-          <div className="flex gap-2 pt-4">
-            <Button
-              onClick={() =>
-                onSave({
-                  ...formData,
-                  downPayment,
-                  emiAmount: isNaN(emiAmount) ? 0 : emiAmount,
-                })
-              }
-              className="flex-1"
-            >
-              {editData ? "Update Application" : "Create Application"}
-            </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
+          <div className="space-y-2">
+            <Label>PP Photo URL</Label>
+            <Input
+              value={formData.ppPhoto}
+              onChange={(e) => setFormData({ ...formData, ppPhoto: e.target.value })}
+              placeholder="https://..."
+            />
+          </div>
+          <div className="space-y-2 col-span-2">
+            <Label>Address</Label>
+            <Input
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              placeholder="City, Country"
+            />
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+
+      {/* Product & EMI */}
+      <div className="space-y-4">
+        <h3 className="font-medium flex items-center gap-2 text-primary">
+          <Package className="h-4 w-4" />
+          Product & EMI Details
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Product Name</Label>
+            <Input
+              value={formData.productName}
+              onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
+              placeholder="Enter product name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Product Image URL</Label>
+            <Input
+              value={formData.productImage}
+              onChange={(e) => setFormData({ ...formData, productImage: e.target.value })}
+              placeholder="https://..."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Total Amount (Rs.)</Label>
+            <Input
+              type="number"
+              value={formData.totalAmount || ""}
+              onChange={(e) => setFormData({ ...formData, totalAmount: Number(e.target.value) })}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Tenure (Months)</Label>
+            <Select
+              value={String(formData.tenure)}
+              onValueChange={(v) => setFormData({ ...formData, tenure: Number(v) })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="6">6 Months</SelectItem>
+                <SelectItem value="12">12 Months</SelectItem>
+                <SelectItem value="18">18 Months</SelectItem>
+                <SelectItem value="24">24 Months</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Interest Rate (%)</Label>
+            <Input
+              type="number"
+              value={formData.interestRate}
+              onChange={(e) => setFormData({ ...formData, interestRate: Number(e.target.value) })}
+              placeholder="12"
+            />
+          </div>
+        </div>
+
+        {formData.totalAmount > 0 && (
+          <div className="rounded-lg gradient-brand p-4 text-primary-foreground">
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-sm opacity-80">Down Payment (40%)</p>
+                <p className="text-lg font-bold">Rs. {downPayment.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-sm opacity-80">Loan Amount</p>
+                <p className="text-lg font-bold">Rs. {loanAmount.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-sm opacity-80">Monthly EMI</p>
+                <p className="text-lg font-bold">Rs. {emiAmount.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bank Info */}
+      <div className="space-y-4">
+        <h3 className="font-medium flex items-center gap-2 text-primary">
+          <CreditCard className="h-4 w-4" />
+          Bank & Card Information
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Bank Name</Label>
+            <Select
+              value={formData.bankName}
+              onValueChange={(v) => setFormData({ ...formData, bankName: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select bank" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Nepal Bank Ltd">Nepal Bank Ltd</SelectItem>
+                <SelectItem value="Nabil Bank">Nabil Bank</SelectItem>
+                <SelectItem value="Himalayan Bank">Himalayan Bank</SelectItem>
+                <SelectItem value="NIC Asia Bank">NIC Asia Bank</SelectItem>
+                <SelectItem value="Global IME Bank">Global IME Bank</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Account Number</Label>
+            <Input
+              value={formData.bankAccountNo}
+              onChange={(e) => setFormData({ ...formData, bankAccountNo: e.target.value })}
+              placeholder="Account number"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Card Number</Label>
+            <Input
+              value={formData.cardNumber}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData({ 
+                  ...formData, 
+                  cardNumber: value,
+                  cardLastFour: value.slice(-4)
+                });
+              }}
+              placeholder="Card number"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Card Expiry</Label>
+            <Input
+              value={formData.cardExpiry}
+              onChange={(e) => setFormData({ ...formData, cardExpiry: e.target.value })}
+              placeholder="MM/YY"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-2 justify-end pt-4 border-t">
+        <Button variant="outline" onClick={onCancel}>Cancel</Button>
+        <Button onClick={handleSubmit}>Create Application</Button>
+      </div>
+    </div>
   );
 }
