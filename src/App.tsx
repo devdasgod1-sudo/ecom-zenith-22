@@ -14,6 +14,7 @@ import Notifications from "./pages/Notifications";
 import Blog from "./pages/Blog";
 import Categories from "./pages/Categories";
 import Banners from "./pages/Banners";
+import Login from "./pages/Login";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
@@ -26,7 +27,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/products" element={<Products />} />
           <Route path="/products/:id" element={<ProductEdit />} />
