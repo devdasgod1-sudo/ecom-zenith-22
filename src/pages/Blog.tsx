@@ -48,7 +48,7 @@ interface BlogPost {
   content: string;
   author: string;
   category: string;
-  status: "published" | "draft";
+  status: "published" | "draft" | "archived";
   date: string;
   image: string;
 }
