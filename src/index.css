@@ -1,8 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 
 @layer base {
   :root {
@@ -57,6 +58,12 @@
     --chart-3: 142 76% 36%;
     --chart-4: 280 65% 60%;
     --chart-5: 0 84% 60%;
+
+    /* Fatafatsewa Brand Colors */
+    --colour-fsP1: #ff6a00;
+    --colour-fsP2: #1967b3;
+    --colour-fsS2: rgb(79 99 235);
+    --colour-yellow1: #FF9107;
   }
 
   .dark {

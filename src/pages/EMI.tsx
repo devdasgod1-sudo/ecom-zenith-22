@@ -35,7 +35,6 @@ import { cn } from "@/lib/utils";
 import {
   Calculator,
   CreditCard,
-  Download,
   Edit,
   Eye,
   FileText,
@@ -49,9 +48,11 @@ import {
   Phone,
   Mail,
   MapPin,
-  Calendar,
   DollarSign,
   Share2,
+  CheckCircle,
+  XCircle,
+  Calendar,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -63,15 +64,43 @@ interface EMIApplication {
   email: string;
   phone: string;
   address: string;
+  dob?: string;
+  nationalID?: string;
+  gender?: string;
+  maritalStatus?: string;
+  salary?: string;
+
   productName: string;
   totalAmount: number;
   downPayment: number;
   emiAmount: number;
   tenure: number;
   interestRate: number;
+
   bankName: string;
   bankAccountNo: string;
   cardLastFour: string;
+
+  guarantor?: {
+    name: string;
+    phone: string;
+    nationalID: string;
+    gender: string;
+    maritalStatus: string;
+    address: string;
+  };
+
+  documents?: {
+    citizenshipFront?: string;
+    citizenshipBack?: string;
+    bankStatement?: string;
+    guarantorCitizenshipFront?: string;
+    guarantorCitizenshipBack?: string;
+    userSignature?: string;
+    photo?: string;
+    guarantorPhoto?: string;
+  };
+
   status: "pending" | "approved" | "rejected" | "active" | "completed";
   appliedDate: string;
   approvedDate?: string;
@@ -85,18 +114,26 @@ const mockEMIApplications: EMIApplication[] = [
     email: "ram@email.com",
     phone: "+977-9841234567",
     address: "Kathmandu, Nepal",
+    dob: "1990-05-15",
+    nationalID: "123-456-789",
+    gender: "Male",
+    maritalStatus: "Married",
+    salary: "50000",
     productName: "Samsung Galaxy S24 Ultra",
     totalAmount: 180000,
     downPayment: 72000,
     emiAmount: 9500,
     tenure: 12,
     interestRate: 12,
-    bankName: "Nepal Bank Ltd",
+    bankName: "Global IME Bank",
     bankAccountNo: "****5678",
     cardLastFour: "4242",
-    status: "active",
+    documents: {
+      photo: "/placeholder-user.jpg",
+      citizenFront: "/placeholder-doc.jpg",
+    },
+    status: "pending",
     appliedDate: "2024-01-10",
-    approvedDate: "2024-01-12",
   },
   {
     id: "2",
@@ -105,6 +142,7 @@ const mockEMIApplications: EMIApplication[] = [
     email: "sita@email.com",
     phone: "+977-9851234567",
     address: "Pokhara, Nepal",
+    gender: "Female",
     productName: "MacBook Pro 14",
     totalAmount: 350000,
     downPayment: 140000,
@@ -114,8 +152,9 @@ const mockEMIApplications: EMIApplication[] = [
     bankName: "Nabil Bank",
     bankAccountNo: "****9012",
     cardLastFour: "5555",
-    status: "pending",
+    status: "active",
     appliedDate: "2024-01-14",
+    approvedDate: "2024-01-15",
   },
   {
     id: "3",
@@ -124,6 +163,8 @@ const mockEMIApplications: EMIApplication[] = [
     email: "hari@email.com",
     phone: "+977-9861234567",
     address: "Biratnagar, Nepal",
+    gender: "Male",
+    maritalStatus: "Single",
     productName: "LG 55 OLED TV",
     totalAmount: 220000,
     downPayment: 88000,
@@ -133,6 +174,14 @@ const mockEMIApplications: EMIApplication[] = [
     bankName: "Himalayan Bank",
     bankAccountNo: "****3456",
     cardLastFour: "1234",
+    guarantor: {
+      name: "Shyam Prasad",
+      phone: "+977-9800000000",
+      nationalID: "987-654-321",
+      gender: "Male",
+      maritalStatus: "Married",
+      address: "Biratnagar, Nepal"
+    },
     status: "completed",
     appliedDate: "2023-12-01",
     approvedDate: "2023-12-03",
@@ -141,7 +190,7 @@ const mockEMIApplications: EMIApplication[] = [
 
 const statusStyles = {
   pending: "bg-warning/10 text-warning",
-  approved: "bg-primary/10 text-primary",
+  approved: "bg-fsP2/10 text-fsP2",
   rejected: "bg-destructive/10 text-destructive",
   active: "bg-success/10 text-success",
   completed: "bg-muted text-muted-foreground",
@@ -193,6 +242,20 @@ export default function EMI() {
     navigator.clipboard.writeText(text);
     toast({ title: "Details copied to clipboard" });
   };
+
+  const handleStatusUpdate = (id: string, newStatus: EMIApplication['status']) => {
+    setApplications(applications.map(app =>
+      app.id === id ? { ...app, status: newStatus, approvedDate: newStatus === 'approved' ? new Date().toISOString().split('T')[0] : app.approvedDate } : app
+    ));
+    toast({
+      title: `Application ${newStatus}`,
+      className: newStatus === 'approved' ? 'bg-success text-white' : 'bg-destructive text-white'
+    });
+    if (viewingApp && viewingApp.id === id) {
+      setViewingApp(prev => prev ? ({ ...prev, status: newStatus }) : null);
+    }
+  };
+
 
   const handlePrint = (app: EMIApplication) => {
     const printWindow = window.open("", "_blank");
@@ -287,8 +350,8 @@ export default function EMI() {
         <div className="grid gap-4 md:grid-cols-4">
           <div className="rounded-xl bg-card p-6 border border-border">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                <FileText className="h-6 w-6 text-primary" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-fsP2/10">
+                <FileText className="h-6 w-6 text-fsP2" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Applications</p>
@@ -320,8 +383,8 @@ export default function EMI() {
           </div>
           <div className="rounded-xl bg-card p-6 border border-border">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl gradient-brand">
-                <DollarSign className="h-6 w-6 text-primary-foreground" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-fsP1">
+                <DollarSign className="h-6 w-6 text-white" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active Value</p>
@@ -354,7 +417,7 @@ export default function EMI() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2 bg-fsP2 hover:bg-fsP2/90">
             <Plus className="h-4 w-4" />
             New Application
           </Button>
@@ -380,8 +443,8 @@ export default function EMI() {
                   <TableCell className="font-mono text-sm">{app.applicationNo}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="h-4 w-4 text-primary" />
+                      <div className="h-8 w-8 rounded-full bg-fsP2/10 flex items-center justify-center">
+                        <User className="h-4 w-4 text-fsP2" />
                       </div>
                       <div>
                         <p className="font-medium">{app.customerName}</p>
@@ -391,7 +454,7 @@ export default function EMI() {
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate">{app.productName}</TableCell>
                   <TableCell className="font-semibold">Rs. {app.totalAmount.toLocaleString()}</TableCell>
-                  <TableCell className="text-primary font-medium">Rs. {app.emiAmount.toLocaleString()}</TableCell>
+                  <TableCell className="text-fsP2 font-medium">Rs. {app.emiAmount.toLocaleString()}</TableCell>
                   <TableCell>
                     <Badge className={cn("capitalize", statusStyles[app.status])}>
                       {app.status}
@@ -402,7 +465,7 @@ export default function EMI() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-8 w-8 text-fsP2 hover:bg-fsP2/10"
                         onClick={() => setViewingApp(app)}
                       >
                         <Eye className="h-4 w-4" />
@@ -410,7 +473,7 @@ export default function EMI() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-8 w-8 text-fsP1 hover:bg-fsP1/10"
                         onClick={() => setEditingApp(app)}
                       >
                         <Edit className="h-4 w-4" />
@@ -458,135 +521,143 @@ export default function EMI() {
           />
         </div>
 
-        {/* View Dialog - PDF Style */}
+        {/* View Dialog - Detailed Accept View */}
         <Dialog open={!!viewingApp} onOpenChange={() => setViewingApp(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-primary" />
-                EMI Application Details
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto p-0 rounded-2xl">
+            <DialogHeader className="p-6 bg-gradient-to-r from-fsP2 to-[#035B91] text-white rounded-t-2xl">
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <FileText className="h-6 w-6" />
+                EMI Application Review
               </DialogTitle>
+              <div className="flex justify-between items-center mt-2">
+                <p className="text-white/80 text-sm">Application No: {viewingApp?.applicationNo}</p>
+                <Badge className={cn("capitalize border-white/20", statusStyles[viewingApp?.status || 'pending'])}>
+                  {viewingApp?.status}
+                </Badge>
+              </div>
             </DialogHeader>
             {viewingApp && (
-              <div className="space-y-6">
-                {/* Header */}
-                <div className="text-center pb-4 border-b border-border">
-                  <h2 className="text-2xl font-bold gradient-brand-text">FatafatSewa</h2>
-                  <p className="text-muted-foreground">EMI Application Document</p>
-                  <p className="text-sm text-muted-foreground mt-1">{viewingApp.applicationNo}</p>
+              <div className="p-6 space-y-8 bg-gray-50/50">
+                {/* 1. Personal Information */}
+                <div>
+                  <div className="flex items-center gap-2 mb-4 border-b border-gray-200 pb-2">
+                    <User className="h-5 w-5 text-fsP2" />
+                    <h3 className="font-semibold text-gray-800">Personal Information</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <InfoItem label="Full Name" value={viewingApp.customerName} />
+                    <InfoItem label="Email" value={viewingApp.email} />
+                    <InfoItem label="Phone" value={viewingApp.phone} />
+                    <InfoItem label="Address" value={viewingApp.address} />
+                    <InfoItem label="Date of Birth" value={viewingApp.dob} />
+                    <InfoItem label="National ID" value={viewingApp.nationalID} />
+                    <InfoItem label="Gender" value={viewingApp.gender} />
+                    <InfoItem label="Marital Status" value={viewingApp.maritalStatus} />
+                    <InfoItem label="Monthly Salary" value={`Rs. ${viewingApp.salary || 'N/A'}`} />
+                  </div>
                 </div>
 
-                {/* Customer Info */}
-                <div className="rounded-lg bg-muted/30 p-4 space-y-3">
-                  <h3 className="font-semibold text-primary flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Customer Information
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Name:</span>
-                      <span className="font-medium">{viewingApp.customerName}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Email:</span>
-                      <span>{viewingApp.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Phone:</span>
-                      <span>{viewingApp.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Address:</span>
-                      <span>{viewingApp.address}</span>
+                {/* 2. Product & EMI Details */}
+                <div>
+                  <div className="flex items-center gap-2 mb-4 border-b border-gray-200 pb-2">
+                    <Calculator className="h-5 w-5 text-fsP2" />
+                    <h3 className="font-semibold text-gray-800">Product & EMI Details</h3>
+                  </div>
+                  <div className="bg-fsP2/5 rounded-xl p-4 border border-fsP2/20">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                      <InfoItem label="Product Name" value={viewingApp.productName} className="col-span-1 md:col-span-2 text-lg font-medium text-fsP2" />
+                      <InfoItem label="Total Amount" value={`Rs. ${viewingApp.totalAmount.toLocaleString()}`} />
+                      <InfoItem label="Down Payment" value={`Rs. ${viewingApp.downPayment.toLocaleString()}`} />
+                      <InfoItem label="Loan Amount" value={`Rs. ${(viewingApp.totalAmount - viewingApp.downPayment).toLocaleString()}`} />
+                      <InfoItem label="Interest Rate" value={`${viewingApp.interestRate}%`} />
+                      <InfoItem label="Tenure" value={`${viewingApp.tenure} Months`} />
+                      <div className="md:col-span-2 mt-2 pt-2 border-t border-fsP2/20 flex justify-between items-center">
+                        <span className="text-gray-600 font-medium">Monthly EMI</span>
+                        <span className="text-2xl font-bold text-fsP2">Rs. {viewingApp.emiAmount.toLocaleString()}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* EMI Details */}
-                <div className="rounded-lg gradient-brand p-4 text-primary-foreground space-y-3">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Calculator className="h-4 w-4" />
-                    EMI Details
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex justify-between py-2 border-b border-primary-foreground/20">
-                      <span className="opacity-80">Product</span>
-                      <span className="font-medium">{viewingApp.productName}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-primary-foreground/20">
-                      <span className="opacity-80">Total Amount</span>
-                      <span className="font-medium">Rs. {viewingApp.totalAmount.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-primary-foreground/20">
-                      <span className="opacity-80">Down Payment (40%)</span>
-                      <span className="font-medium">Rs. {viewingApp.downPayment.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-primary-foreground/20">
-                      <span className="opacity-80">Loan Amount</span>
-                      <span className="font-medium">Rs. {(viewingApp.totalAmount - viewingApp.downPayment).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-primary-foreground/20">
-                      <span className="opacity-80">Interest Rate</span>
-                      <span className="font-medium">{viewingApp.interestRate}% p.a.</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-primary-foreground/20">
-                      <span className="opacity-80">Tenure</span>
-                      <span className="font-medium">{viewingApp.tenure} Months</span>
-                    </div>
-                    <div className="col-span-2 flex justify-between py-2 text-lg">
-                      <span>Monthly EMI</span>
-                      <span className="font-bold">Rs. {viewingApp.emiAmount.toLocaleString()}</span>
-                    </div>
+                {/* 3. Bank & Credit Card */}
+                <div>
+                  <div className="flex items-center gap-2 mb-4 border-b border-gray-200 pb-2">
+                    <Building2 className="h-5 w-5 text-fsP2" />
+                    <h3 className="font-semibold text-gray-800">Bank & Credit Information</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <InfoItem label="Bank Name" value={viewingApp.bankName} />
+                    <InfoItem label="Account Number" value={viewingApp.bankAccountNo} />
+                    <InfoItem label="Card (Last 4)" value={`**** ${viewingApp.cardLastFour}`} />
                   </div>
                 </div>
 
-                {/* Bank Info */}
-                <div className="rounded-lg bg-muted/30 p-4 space-y-3">
-                  <h3 className="font-semibold text-primary flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
-                    Bank Information
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex justify-between py-2 border-b border-border">
-                      <span className="text-muted-foreground">Bank Name</span>
-                      <span className="font-medium">{viewingApp.bankName}</span>
+                {/* 4. Guarantor Info (if available) */}
+                {viewingApp.guarantor && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-4 border-b border-gray-200 pb-2">
+                      <User className="h-5 w-5 text-fsP2" />
+                      <h3 className="font-semibold text-gray-800">Guarantor Information</h3>
                     </div>
-                    <div className="flex justify-between py-2 border-b border-border">
-                      <span className="text-muted-foreground">Account No.</span>
-                      <span className="font-mono">{viewingApp.bankAccountNo}</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <InfoItem label="Name" value={viewingApp.guarantor.name} />
+                      <InfoItem label="Phone" value={viewingApp.guarantor.phone} />
+                      <InfoItem label="National ID" value={viewingApp.guarantor.nationalID} />
+                      <InfoItem label="Address" value={viewingApp.guarantor.address} />
                     </div>
-                    <div className="flex justify-between py-2 border-b border-border">
-                      <span className="text-muted-foreground">Card</span>
-                      <span className="font-mono">****{viewingApp.cardLastFour}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b border-border">
-                      <span className="text-muted-foreground">Applied Date</span>
-                      <span>{viewingApp.appliedDate}</span>
-                    </div>
+                  </div>
+                )}
+
+                {/* 5. Documents */}
+                <div>
+                  <div className="flex items-center gap-2 mb-4 border-b border-gray-200 pb-2">
+                    <FileText className="h-5 w-5 text-fsP2" />
+                    <h3 className="font-semibold text-gray-800">Documents</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <DocumentCard label="User Photo" src={viewingApp.documents?.photo} />
+                    <DocumentCard label="Citizenship Front" src={viewingApp.documents?.citizenshipFront} />
+                    <DocumentCard label="Citizenship Back" src={viewingApp.documents?.citizenshipBack} />
+                    <DocumentCard label="Bank Statement" src={viewingApp.documents?.bankStatement} />
+                    {viewingApp.guarantor && (
+                      <>
+                        <DocumentCard label="Guarantor Photo" src={viewingApp.documents?.guarantorPhoto} />
+                        <DocumentCard label="Guarantor Citizenship" src={viewingApp.documents?.guarantorCitizenshipFront} />
+                      </>
+                    )}
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-2 pt-4 border-t border-border">
-                  <Button onClick={() => handlePrint(viewingApp)} className="gap-2">
-                    <Printer className="h-4 w-4" />
-                    Print Document
-                  </Button>
-                  <Button variant="outline" onClick={() => handleShare(viewingApp)} className="gap-2">
-                    <Share2 className="h-4 w-4" />
-                    Share
-                  </Button>
+
+                {/* Actions Footer */}
+                <div className="sticky bottom-0 bg-white p-4 border-t border-gray-200 flex justify-end gap-3 -mx-6 -mb-6 mt-6">
+                  {viewingApp.status === 'pending' && (
+                    <>
+                      <Button
+                        variant="destructive"
+                        className="gap-2"
+                        onClick={() => handleStatusUpdate(viewingApp.id, 'rejected')}
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Reject Application
+                      </Button>
+                      <Button
+                        className="gap-2 bg-success hover:bg-success/90 text-white"
+                        onClick={() => handleStatusUpdate(viewingApp.id, 'approved')}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Accept & Approve
+                      </Button>
+                    </>
+                  )}
+                  <Button variant="outline" onClick={() => setViewingApp(null)}>Close</Button>
                 </div>
               </div>
             )}
           </DialogContent>
         </Dialog>
 
-        {/* Add/Edit Dialog */}
+        {/* Add/Edit Dialog - Kept simple for now as focus is on View */}
         <EMIFormDialog
           open={isAddDialogOpen || !!editingApp}
           onOpenChange={(open) => {
@@ -632,6 +703,26 @@ export default function EMI() {
   );
 }
 
+const InfoItem = ({ label, value, className }: { label: string, value?: string | number, className?: string }) => (
+  <div className={className}>
+    <span className="text-xs font-medium text-gray-500 uppercase block mb-1">{label}</span>
+    <span className="text-sm font-medium text-gray-900">{value || "-"}</span>
+  </div>
+);
+
+const DocumentCard = ({ label, src }: { label: string, src?: string }) => (
+  <div className="border border-gray-200 rounded-lg p-2 bg-white hover:shadow-md transition-shadow">
+    <p className="text-xs text-center text-gray-500 mb-2">{label}</p>
+    <div className="aspect-[4/3] bg-gray-100 rounded flex items-center justify-center overflow-hidden relative">
+      {src ? (
+        <img src={src} alt={label} className="w-full h-full object-cover" />
+      ) : (
+        <FileText className="text-gray-300 h-8 w-8" />
+      )}
+    </div>
+  </div>
+);
+
 function EMIFormDialog({
   open,
   onOpenChange,
@@ -662,7 +753,7 @@ function EMIFormDialog({
   const monthlyRate = formData.interestRate / 12 / 100;
   const emiAmount = Math.round(
     (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, formData.tenure)) /
-      (Math.pow(1 + monthlyRate, formData.tenure) - 1)
+    (Math.pow(1 + monthlyRate, formData.tenure) - 1)
   );
 
   return (
@@ -674,7 +765,7 @@ function EMIFormDialog({
         <div className="space-y-6">
           {/* Customer Info */}
           <div className="space-y-4">
-            <h3 className="font-medium flex items-center gap-2 text-primary">
+            <h3 className="font-medium flex items-center gap-2 text-fsP2">
               <User className="h-4 w-4" />
               Customer Information
             </h3>
@@ -717,7 +808,7 @@ function EMIFormDialog({
 
           {/* Product & EMI */}
           <div className="space-y-4">
-            <h3 className="font-medium flex items-center gap-2 text-primary">
+            <h3 className="font-medium flex items-center gap-2 text-fsP2">
               <Calculator className="h-4 w-4" />
               Product & EMI Details
             </h3>
@@ -769,7 +860,7 @@ function EMIFormDialog({
 
             {/* EMI Preview */}
             {formData.totalAmount > 0 && (
-              <div className="rounded-lg gradient-brand p-4 text-primary-foreground">
+              <div className="rounded-lg bg-gradient-to-r from-fsP2 to-[#035B91] p-4 text-white">
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <p className="text-sm opacity-80">Down Payment (40%)</p>
@@ -790,7 +881,7 @@ function EMIFormDialog({
 
           {/* Bank Info */}
           <div className="space-y-4">
-            <h3 className="font-medium flex items-center gap-2 text-primary">
+            <h3 className="font-medium flex items-center gap-2 text-fsP2">
               <Building2 className="h-4 w-4" />
               Bank Information
             </h3>
@@ -802,14 +893,12 @@ function EMIFormDialog({
                   onValueChange={(v) => setFormData({ ...formData, bankName: v })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select bank" />
+                    <SelectValue placeholder="Select Bank" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Nepal Bank Ltd">Nepal Bank Ltd</SelectItem>
+                    <SelectItem value="Global IME Bank">Global IME Bank</SelectItem>
                     <SelectItem value="Nabil Bank">Nabil Bank</SelectItem>
                     <SelectItem value="Himalayan Bank">Himalayan Bank</SelectItem>
-                    <SelectItem value="NIC Asia Bank">NIC Asia Bank</SelectItem>
-                    <SelectItem value="Global IME Bank">Global IME Bank</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -818,38 +907,15 @@ function EMIFormDialog({
                 <Input
                   value={formData.bankAccountNo}
                   onChange={(e) => setFormData({ ...formData, bankAccountNo: e.target.value })}
-                  placeholder="****1234"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Credit Card (Last 4 digits)</Label>
-                <Input
-                  value={formData.cardLastFour}
-                  onChange={(e) => setFormData({ ...formData, cardLastFour: e.target.value })}
-                  placeholder="1234"
-                  maxLength={4}
+                  placeholder="Enter account number"
                 />
               </div>
             </div>
           </div>
-
-          <div className="flex gap-2 pt-4">
-            <Button
-              onClick={() =>
-                onSave({
-                  ...formData,
-                  downPayment,
-                  emiAmount: isNaN(emiAmount) ? 0 : emiAmount,
-                })
-              }
-              className="flex-1"
-            >
-              {editData ? "Update Application" : "Create Application"}
-            </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-6">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button className="bg-fsP2 hover:bg-fsP2/90" onClick={() => onSave(formData)}>Save Application</Button>
         </div>
       </DialogContent>
     </Dialog>

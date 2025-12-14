@@ -16,7 +16,10 @@ import {
   Calculator,
   Wallet,
   Zap,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface NavItem {
   title: string;
@@ -62,6 +65,13 @@ export function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(["Content & SEO", "UI Control", "Finance"]);
   const location = useLocation();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   const toggleExpanded = (title: string) => {
     setExpandedItems((prev) =>
@@ -173,7 +183,7 @@ export function AdminSidebar() {
       {/* Footer */}
       {!collapsed && (
         <div className="border-t border-sidebar-border p-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-brand text-sidebar-background text-sm font-bold">
               FS
             </div>
@@ -182,6 +192,13 @@ export function AdminSidebar() {
               <p className="text-xs text-sidebar-muted truncate">admin@fatafatsewa.com</p>
             </div>
           </div>
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Logout</span>
+          </button>
         </div>
       )}
     </aside>

@@ -76,6 +76,10 @@ export default {
           4: "hsl(var(--chart-4))",
           5: "hsl(var(--chart-5))",
         },
+        fsP1: "var(--colour-fsP1)",
+        fsP2: "var(--colour-fsP2)",
+        fsS2: "var(--colour-fsS2)",
+        yellow1: "var(--colour-yellow1)",
       },
       borderRadius: {
         lg: "var(--radius)",
